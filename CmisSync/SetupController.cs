@@ -69,7 +69,11 @@ namespace CmisSync
         /// <summary>
         /// 
         /// </summary>
-		Syncing
+		Syncing,
+		/// <summary>
+		/// 
+		/// </summary>
+		Limit
     }
 
     /// <summary>

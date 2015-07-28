@@ -96,6 +96,11 @@ namespace CmisSync.Lib
         /// </summary>
         public SyncStatus Status { get; private set; }
 
+        /// <summary>
+        /// Database to cache remote information from the CMIS server.
+        /// </summary>
+        private Database.Database database;
+
 
         /// <summary>
         /// Stop syncing momentarily.
@@ -221,6 +226,9 @@ namespace CmisSync.Lib
             };
             local_timer.AutoReset = false;
             local_timer.Interval = delay_interval;
+
+            // Database is the user's AppData/Roaming
+            database = new Database.Database(RepoInfo.CmisDatabase);
         }
 
 
@@ -399,6 +407,8 @@ namespace CmisSync.Lib
             }
             Watcher.EnableRaisingEvents = false; //Disable events while syncing...
             Watcher.EnableEvent = false;
+            RepoInfo.BeginTimeSync = DateTime.Now;
+
         }
 
 
@@ -429,7 +439,11 @@ namespace CmisSync.Lib
 
             // Save last sync
             RepoInfo.LastSuccessedSync = DateTime.Now;
-            // TODO write it to database.
+            // It is write to the database.
+            database.SetBeginSyncTime(RepoInfo.BeginTimeSync.ToString());
+            //Logger.Info(database.GetBeginSyncTime());
+            database.SetLastSyncTime(RepoInfo.LastSuccessedSync.ToString());
+            //Logger.Info(database.GetLastSyncTime());
         }
 
 

@@ -91,6 +91,7 @@ namespace CmisSync {
         {
             this.Present();
             Header = CmisSync.Properties_Resources.Where;
+			SetSizeRequest (680, 400);
 
             VBox layout_vertical   = new VBox (false, 12);
             HBox layout_fields     = new HBox (true, 12);
@@ -99,7 +100,7 @@ namespace CmisSync {
             VBox layout_user       = new VBox (true, 0);
             VBox layout_password   = new VBox (true, 0);
 
-            // Address
+			// Address
             Label address_label = new Label()
             {
                 UseMarkup = true,
@@ -205,6 +206,13 @@ namespace CmisSync {
                 }
             };
 
+			Label limit_error_label = new Label()
+			{
+				UseMarkup = true,
+				Xalign = 0,
+				Visible = false
+			};
+
             // Address
             layout_address_help.PackStart(address_help_label, false, false, 0);
             layout_address_help.PackStart(address_help_urlbox, false, false, 0);
@@ -234,6 +242,7 @@ namespace CmisSync {
             layout_vertical.PackStart (layout_address, false, false, 0);
             layout_vertical.PackStart (layout_fields, false, false, 0);
             layout_vertical.PackStart (address_error_label, true, true, 0);
+			layout_vertical.PackStart (limit_error_label, false, false, 0);
 
             Add (layout_vertical);
 
@@ -248,6 +257,7 @@ namespace CmisSync {
             Button continue_button = new Button (continueText) {
                 Sensitive = String.IsNullOrEmpty( Controller.CheckAddPage (address_entry.Text))
             };
+
 
             continue_button.Clicked += delegate {
                 // Show wait cursor
@@ -328,6 +338,16 @@ namespace CmisSync {
                     }
                 });
             };
+
+
+			if (ConfigManager.CurrentConfig.RepoLimit<=ConfigManager.CurrentConfig.Folders.Count){
+				limit_error_label.Markup = "<span foreground=\"red\">" +
+					"Repositories limit is reached.\n" +
+					"You must either remove unnecessary repositories or increase this limit.</span>";
+				limit_error_label.Show();
+				address_entry.Sensitive = false;
+			}
+
 
             AddButton (cancel_button);
             AddButton (continue_button);
@@ -1001,6 +1021,66 @@ namespace CmisSync {
 
 		}
 
+		public void ShowLimitPage()
+		{
+			SetSizeRequest (400, 280);
+			Header = "Limit Repositories";
+
+
+			Label limit_label = new Label() {
+				Xalign = 0,
+				UseMarkup = true,
+				Markup = "<b>Limit</b>"
+			};
+
+
+			SpinButton limit_entry = new SpinButton (1,20,1);
+			limit_entry.Value = ConfigManager.CurrentConfig.RepoLimit;
+
+
+			Label limit_error_label = new Label() {
+				Xalign = 0,
+				UseMarkup = true,
+				Visible = false
+			};
+
+
+			Button cancel_button = new Button(cancelText);
+			cancel_button.Clicked += delegate {
+				Controller.PageCancelled();
+			};
+
+
+			Button save_button = new Button(
+				CmisSync.Properties_Resources.Save
+				);
+
+			VBox layout_vertical   = new VBox (false, 10);
+
+			layout_vertical.PackStart (new Label(""), false, false, 0);
+			//layout_vertical.PackStart (limit_label, false, false, 0);
+			layout_vertical.PackStart (limit_entry, false, false, 0);
+
+			//layout_vertical.PackStart (limit_error_label, false, false, 0);
+
+
+			Add(layout_vertical);
+			//layout_vertical.Add (save_button);
+			AddButton(save_button);
+			AddButton(cancel_button);
+
+			save_button.Clicked += delegate {
+			
+			int repolimit = ConfigManager.CurrentConfig.RepoLimit;
+			Config config = ConfigManager.CurrentConfig;
+			ConfigManager.CurrentConfig.RepoLimit=Int32.Parse(limit_entry.Text);
+			config.Save();
+
+			Controller.FinishPageCompleted();
+
+			};
+		}
+
         public Setup () : base ()
         {
             Controller.HideWindowEvent += delegate {
@@ -1051,6 +1131,10 @@ namespace CmisSync {
 
 						case PageType.Settings:
 						ShowSettingsPage();
+						break;
+
+						case PageType.Limit:
+						ShowLimitPage();
 						break;
                         }
 

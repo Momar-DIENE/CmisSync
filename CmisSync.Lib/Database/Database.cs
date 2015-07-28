@@ -1015,6 +1015,66 @@ namespace CmisSync.Lib.Database
             Logger.Info("Database ChangeLog token set to: " + token);
         }
 
+        // <summary>
+        /// Get the BeginSyncTime that was stored at the begin of the CmisSync synchronization.
+        /// If no BeginSyncTime has ever been stored, return null.
+        /// </summary>
+        public string GetBeginSyncTime()
+        {
+            var token = ExecuteSQLFunction("SELECT value FROM general WHERE key=\"BeginSyncTime\"", null);
+
+            if (token is DBNull)
+            {
+                return null;
+            }
+            else
+            {
+                return (string)token;
+            }
+        }
+        /// <summary>
+        /// Set the stored Begin Sync Time.
+        /// This should be called before CmisSync synchronization.
+        /// </summary>
+        public void SetBeginSyncTime(string token)
+        {
+            string command = "INSERT OR REPLACE INTO general (key, value) VALUES (\"BeginSyncTime\", @token)";
+            Dictionary<string, object> parameters = new Dictionary<string, object>();
+            parameters.Add("token", token);
+            ExecuteSQLAction(command, parameters);
+            Logger.Info("Database: "+databaseFileName+" BeginSyncTime set to: " + token);
+        }
+
+        // <summary>
+        /// Get the LastSyncTime that was stored at the end of the CmisSync synchronization.
+        /// If no LastSyncTime has ever been stored, return null.
+        /// </summary>
+        public string GetLastSyncTime()
+        {
+            var token = ExecuteSQLFunction("SELECT value FROM general WHERE key=\"LastSyncTime\"", null);
+
+            if (token is DBNull)
+            {
+                return null;
+            }
+            else
+            {
+                return (string)token;
+            }
+        }
+        /// <summary>
+        /// Set the stored LastSyncTime.
+        /// This should be called before CmisSync synchronization.
+        /// </summary>
+        public void SetLastSyncTime(string token)
+        {
+            string command = "INSERT OR REPLACE INTO general (key, value) VALUES (\"LastSyncTime\", @token)";
+            Dictionary<string, object> parameters = new Dictionary<string, object>();
+            parameters.Add("token", token);
+            ExecuteSQLAction(command, parameters);
+            Logger.Info("Database: "+databaseFileName+" LastSyncTime set to: " + token);
+        }
+
         const string PathPrefixKey = "PathPrefix";
 
         /// <summary>

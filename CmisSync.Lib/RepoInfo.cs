@@ -86,6 +86,11 @@ namespace CmisSync.Lib
         public DateTime LastSuccessedSync { get; set; }
 
         /// <summary>
+        /// Define the begin's time of the sync 
+        /// </summary>
+        public DateTime BeginTimeSync { get; set; }
+
+        /// <summary>
         /// Define if, at cmissync startup, first sync is base on last success time or on startup
         /// </summary>
         public bool SyncAtStartup { get; set; }

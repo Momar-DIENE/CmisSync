@@ -82,6 +82,8 @@ namespace CmisSync.Lib
         /// </summary>
         public int ConfigSchemaVersion { get { return configXml.ConfigSchemaVersion; } set { configXml.ConfigSchemaVersion = value; } }
 
+        public int RepoLimit { get { return configXml.repoLimit; } set { configXml.repoLimit = value; } }
+
         /// <summary>
         /// Notifications.
         /// </summary>
@@ -412,6 +414,9 @@ namespace CmisSync.Lib
             /// </summary>
             [XmlElement("configSchemaVersion")]
             public Int32 ConfigSchemaVersion { get; set; }
+
+            [XmlElement("repoLimit")]
+            public Int32 repoLimit { get; set; }
             
             /// <summary>
             /// Notifications.

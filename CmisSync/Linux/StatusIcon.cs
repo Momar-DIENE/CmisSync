@@ -25,6 +25,8 @@ using Mono.Unix;
 using System.Globalization;
 
 using CmisSync.Lib;
+using CmisSync.Lib.Database;
+
 namespace CmisSync {
 
     public class StatusIcon {
@@ -39,6 +41,8 @@ namespace CmisSync {
 		}
 
         public StatusIconController Controller = new StatusIconController ();
+
+		private Database database;
 
         private Gdk.Pixbuf [] animation_frames;
 
@@ -188,13 +192,13 @@ private ApplicationIndicator indicator;
                         Image = new Image (UIHelpers.GetIcon ("folder-cmissync", 16))
                     };
                     open_localfolder_item.Activated += OpenFolderDelegate(folder_name);
-/*
+
                     ImageMenuItem browse_remotefolder_item = new CmisSyncMenuItem(
                             CmisSync.Properties_Resources.BrowseRemoteFolder) {
                         Image = new Image (UIHelpers.GetIcon ("folder-cmissync", 16))
                     };
                     browse_remotefolder_item.Activated += OpenRemoteFolderDelegate(folder_name);
-*/
+
 
                     ImageMenuItem edit_folder_item = new CmisSyncMenuItem (
                         CmisSync.Properties_Resources.EditTitle);
@@ -219,11 +223,24 @@ private ApplicationIndicator indicator;
                         Image = new Image (UIHelpers.GetIcon ("document-deleted", 12))
                     };
                     remove_folder_from_sync_item.Activated += RemoveFolderFromSyncDelegate(folder_name);
+					ImageMenuItem last_sync_time_item = new CmisSyncMenuItem(
+						"View Last Sync Time") {
+					
+					};
+					last_sync_time_item.Activated +=LastSyncTimeDelegate(folder_name);
+
+					ImageMenuItem manual_sync_item = new CmisSyncMenuItem(
+						"Manual Sync") {
+
+					};
+					manual_sync_item.Activated +=ManualSyncDelegate(folder_name);
 
                     submenu.Add(open_localfolder_item);
-                    //submenu.Add(browse_remotefolder_item);
+                    submenu.Add(browse_remotefolder_item);
                     submenu.Add(suspend_folder_item);
+					submenu.Add(manual_sync_item);
                     submenu.Add(edit_folder_item);
+					submenu.Add(last_sync_time_item);
                     submenu.Add(new SeparatorMenuItem());
                     submenu.Add(remove_folder_from_sync_item);
 
@@ -241,41 +258,52 @@ private ApplicationIndicator indicator;
             };
             this.menu.Add(add_item);
 
-            this.menu.Add (new SeparatorMenuItem ());
-
-            // Log Menu
-            MenuItem log_item = new MenuItem(
-                    CmisSync.Properties_Resources.ViewLog);
-            log_item.Activated += delegate
-            {
-                Controller.LogClicked();
-            };
-            this.menu.Add(log_item);
-
-            // About Menu
-            MenuItem about_item = new MenuItem (
-                    CmisSync.Properties_Resources.About);
-            about_item.Activated += delegate {
-                Controller.AboutClicked ();
-            };
-            this.menu.Add (about_item);
-
 			// Sync size Menu
 			MenuItem Syncsize_item = new MenuItem (
-				"Syncing size");
+				"View Syncing size");
 			Syncsize_item.Activated += delegate {
 				Controller.SyncSizeClicked ();
 			};
 			this.menu.Add (Syncsize_item);
 
-            this.quit_item = new MenuItem (
-                    CmisSync.Properties_Resources.Exit) {
-                Sensitive = true
-            };
+			// Limit repo Menu
+			MenuItem limitRepo_item = new MenuItem (
+				"Limit Repositories");
+			limitRepo_item.Activated += delegate {
+				Controller.limitRepoClicked ();
+			};
+			this.menu.Add (limitRepo_item);
 
-            this.quit_item.Activated += delegate {
-                Controller.QuitClicked ();
-            };
+			this.menu.Add (new SeparatorMenuItem ());
+
+			// Log Menu
+			MenuItem log_item = new MenuItem(
+				CmisSync.Properties_Resources.ViewLog);
+			log_item.Activated += delegate
+			{
+				Controller.LogClicked();
+			};
+			this.menu.Add(log_item);
+
+			// About Menu
+			MenuItem about_item = new MenuItem (
+				CmisSync.Properties_Resources.About);
+			about_item.Activated += delegate {
+				Controller.AboutClicked ();
+			};
+			this.menu.Add (about_item);
+
+			this.menu.Add (new SeparatorMenuItem ());
+
+			this.quit_item = new MenuItem (
+				CmisSync.Properties_Resources.Exit) {
+				Sensitive = true
+			};
+
+
+			this.quit_item.Activated += delegate {
+				Controller.QuitClicked ();
+			};
 
             this.menu.Add (this.quit_item);
             this.menu.ShowAll ();
@@ -296,6 +324,17 @@ private ApplicationIndicator indicator;
             };
         }
 
+		/// <summary>
+		/// Delegate for opening the remote folder.
+		/// </summary>
+		private EventHandler OpenRemoteFolderDelegate(string reponame)
+		{
+			return delegate
+			{
+				Controller.RemoteFolderClicked(reponame);
+			};
+		}
+
         private EventHandler EditFolderDelegate (string name)
         {
             return delegate {
@@ -308,6 +347,43 @@ private ApplicationIndicator indicator;
             return delegate
             {
                 Controller.SuspendSyncClicked(reponame);
+            };
+        }
+
+		private EventHandler ManualSyncDelegate(string reponame)
+		{
+			return delegate
+			{
+				Controller.ManualSyncClicked(reponame);
+			};
+		}
+
+		private EventHandler LastSyncTimeDelegate(string reponame)
+        {
+            return delegate
+            {
+				MessageDialog md=null;
+				foreach (Config.SyncConfig.Folder f in ConfigManager.CurrentConfig.Folders) {
+					if (f.DisplayName==reponame){
+						RepoInfo repoinfo=f.GetRepoInfo();
+						database=new Database(repoinfo.CmisDatabase);
+						repoinfo.BeginTimeSync=Convert.ToDateTime(database.GetBeginSyncTime());
+						repoinfo.LastSuccessedSync=Convert.ToDateTime(database.GetLastSyncTime());
+
+						md=new MessageDialog(null, DialogFlags.DestroyWithParent, MessageType.Info, 
+						                                   ButtonsType.Close, string.Format (
+							"<span weight='bold' font_size='large'>{0,30}</span>\n\n"+
+							"<span font_size='medium'>{1,-20}</span><span weight='light' font_size='medium'>{2,20}</span>\n"+
+							"<span font_size='medium'>{3,-22}</span><span weight='light' font_size='medium'>{4,20}</span>\n"+
+							"<span font_size='medium'>{5,-14}</span><span weight='light' font_size='medium'> {6,20}  seconde(s)</span>\n",
+							repoinfo.Name,
+							"Begin Sync Time:",repoinfo.BeginTimeSync,
+							"End Sync Time:",repoinfo.LastSuccessedSync,
+							"Time:",(repoinfo.LastSuccessedSync-repoinfo.BeginTimeSync).TotalSeconds));
+					}
+				}
+				md.Run();
+				md.Destroy();
             };
         }
 

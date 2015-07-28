@@ -211,6 +211,8 @@ namespace CmisSync
                 UpdateStatusItemEvent(StateText);
                 UpdateIconEvent(CurrentState == IconState.Error ? -1 : 0);
                 UpdateMenuEvent(CurrentState);
+				Program.UI.SyncSize.Dispose ();
+				Program.UI.SyncSize = new SyncSize ();
             };
 
             // No more download/upload.
@@ -358,6 +360,14 @@ namespace CmisSync
 		public void SyncSizeClicked()
 		{
 			Program.Controller.ShowSyncSizeWindow();
+		}
+
+		/// <summary>
+		/// Show the limit repositories dialog.
+		/// </summary>
+		public void limitRepoClicked()
+		{
+			Program.Controller.ShowSetupWindow(PageType.Limit);
 		}
 
         /// <summary>
